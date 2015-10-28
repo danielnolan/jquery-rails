@@ -1,14 +1,14 @@
 (function($, undefined) {
 
-/**
- * Unobtrusive scripting adapter for jQuery
- * https://github.com/rails/jquery-ujs
- *
- * Requires jQuery 1.8.0 or later.
- *
- * Released under the MIT license
- *
- */
+  /**
+  * Unobtrusive scripting adapter for jQuery
+  * https://github.com/rails/jquery-ujs
+  *
+  * Requires jQuery 1.8.0 or later.
+  *
+  * Released under the MIT license
+  *
+  */
 
   // Cut down on the number of issues from people inadvertently including jquery_ujs twice
   // by detecting and raising an error when it happens.
@@ -48,7 +48,7 @@
     requiredInputSelector: 'input[name][required]:not([disabled]),textarea[name][required]:not([disabled])',
 
     // Form file input elements
-    fileInputSelector: 'input[type=file]:not([disabled])',
+    fileInputSelector: 'input[type=file]',
 
     // Link onClick disable selector with possible reenable after remote submission
     linkDisableSelector: 'a[data-disable-with], a[data-disable]',
@@ -58,12 +58,12 @@
 
     // Up-to-date Cross-Site Request Forgery token
     csrfToken: function() {
-     return $('meta[name=csrf-token]').attr('content');
+      return $('meta[name=csrf-token]').attr('content');
     },
 
     // URL param that must contain the CSRF token
     csrfParam: function() {
-     return $('meta[name=csrf-param]').attr('content');
+      return $('meta[name=csrf-param]').attr('content');
     },
 
     // Make sure that every Ajax request sends the CSRF token
@@ -191,14 +191,10 @@
         // This is a workaround to a IE bug.
         urlAnchor.href = urlAnchor.href;
 
-        // If URL protocol is false or is a string containing a single colon
-        // *and* host are false, assume it is not a cross-domain request
-        // (should only be the case for IE7 and IE compatibility mode).
-        // Otherwise, evaluate protocol and host of the URL against the origin
-        // protocol and host.
-        return !(((!urlAnchor.protocol || urlAnchor.protocol === ':') && !urlAnchor.host) ||
-          (originAnchor.protocol + '//' + originAnchor.host ===
-            urlAnchor.protocol + '//' + urlAnchor.host));
+        // Make sure that the browser parses the URL and that the protocols and hosts match.
+        return !urlAnchor.protocol || !urlAnchor.host ||
+        (originAnchor.protocol + '//' + originAnchor.host !==
+        urlAnchor.protocol + '//' + urlAnchor.host);
       } catch (e) {
         // If there is an error parsing the URL, assume it is crossDomain.
         return true;
@@ -209,12 +205,12 @@
     // <a href="/users/5" data-method="delete" rel="nofollow" data-confirm="Are you sure?">Delete</a>
     handleMethod: function(link) {
       var href = rails.href(link),
-        method = link.data('method'),
-        target = link.attr('target'),
-        csrfToken = rails.csrfToken(),
-        csrfParam = rails.csrfParam(),
-        form = $('<form method="post" action="' + href + '"></form>'),
-        metadataInput = '<input name="_method" value="' + method + '" type="hidden" />';
+      method = link.data('method'),
+      target = link.attr('target'),
+      csrfToken = rails.csrfToken(),
+      csrfParam = rails.csrfParam(),
+      form = $('<form method="post" action="' + href + '"></form>'),
+      metadataInput = '<input name="_method" value="' + method + '" type="hidden" />';
 
       if (csrfParam !== undefined && csrfToken !== undefined && !rails.isCrossDomain(href)) {
         metadataInput += '<input name="' + csrfParam + '" value="' + csrfToken + '" type="hidden" />';
@@ -234,9 +230,9 @@
     },
 
     /* Disables form elements:
-      - Caches element value in 'ujs:enable-with' data store
-      - Replaces element text with value of 'data-disable-with' attribute
-      - Sets disabled property to true
+    - Caches element value in 'ujs:enable-with' data store
+    - Replaces element text with value of 'data-disable-with' attribute
+    - Sets disabled property to true
     */
     disableFormElements: function(form) {
       rails.formElements(form, rails.disableSelector).each(function() {
@@ -259,10 +255,11 @@
     },
 
     /* Re-enables disabled form elements:
-      - Replaces element text with cached value from 'ujs:enable-with' data store (created in `disableFormElements`)
-      - Sets disabled property to false
+    - Replaces element text with cached value from 'ujs:enable-with' data store (created in `disableFormElements`)
+    - Sets disabled property to false
     */
     enableFormElements: function(form) {
+      form.data('disabling', false);
       rails.formElements(form, rails.enableSelector).each(function() {
         rails.enableFormElement($(this));
       });
@@ -270,23 +267,23 @@
 
     enableFormElement: function(element) {
       var method = element.is('button') ? 'html' : 'val';
-      if (typeof element.data('ujs:enable-with') !== 'undefined') element[method](element.data('ujs:enable-with'));
+      if (element.data('ujs:enable-with')) element[method](element.data('ujs:enable-with'));
       element.prop('disabled', false);
     },
 
-   /* For 'data-confirm' attribute:
-      - Fires `confirm` event
-      - Shows the confirmation dialog
-      - Fires the `confirm:complete` event
+    /* For 'data-confirm' attribute:
+    - Fires `confirm` event
+    - Shows the confirmation dialog
+    - Fires the `confirm:complete` event
 
-      Returns `true` if no function stops the chain and user chose yes; `false` otherwise.
-      Attaching a handler to the element's `confirm` event that returns a `falsy` value cancels the confirmation dialog.
-      Attaching a handler to the element's `confirm:complete` event that returns a `falsy` value makes this function
-      return false. The `confirm:complete` event is fired whether or not the user answered true or false to the dialog.
-   */
+    Returns `true` if no function stops the chain and user chose yes; `false` otherwise.
+    Attaching a handler to the element's `confirm` event that returns a `falsy` value cancels the confirmation dialog.
+    Attaching a handler to the element's `confirm:complete` event that returns a `falsy` value makes this function
+    return false. The `confirm:complete` event is fired whether or not the user answered true or false to the dialog.
+    */
     allowAction: function(element) {
       var message = element.data('confirm'),
-          answer = false, callback;
+      answer = false, callback;
       if (!message) { return true; }
 
       if (rails.fire(element, 'confirm')) {
@@ -303,8 +300,8 @@
     // Helper function which checks for blank inputs in a form that match the specified CSS selector
     blankInputs: function(form, specifiedSelector, nonBlank) {
       var inputs = $(), input, valueToCheck,
-          selector = specifiedSelector || 'input,textarea',
-          allInputs = form.find(selector);
+      selector = specifiedSelector || 'input,textarea',
+      allInputs = form.find(selector);
 
       allInputs.each(function() {
         input = $(this);
@@ -387,11 +384,11 @@
     });
 
     $document.delegate(rails.linkDisableSelector, 'ajax:complete', function() {
-        rails.enableElement($(this));
+      rails.enableElement($(this));
     });
 
     $document.delegate(rails.buttonDisableSelector, 'ajax:complete', function() {
-        rails.enableFormElement($(this));
+      rails.enableFormElement($(this));
     });
 
     $document.delegate(rails.linkClickSelector, 'click.rails', function(e) {
@@ -445,9 +442,9 @@
 
     $document.delegate(rails.formSubmitSelector, 'submit.rails', function(e) {
       var form = $(this),
-        remote = rails.isRemote(form),
-        blankRequiredInputs,
-        nonBlankFileInputs;
+      remote = rails.isRemote(form),
+      blankRequiredInputs,
+      nonBlankFileInputs;
 
       if (!rails.allowAction(form)) return rails.stopEverything(e);
 
@@ -477,8 +474,14 @@
         return false;
 
       } else {
-        // slight timeout so that the submit button gets properly serialized
-        setTimeout(function(){ rails.disableFormElements(form); }, 13);
+        if(! form.data('disabling')){
+          e.preventDefault();
+          form.data('disabling', true);
+          // slight timeout so that the submit button gets properly serialized
+          setTimeout(function(){ rails.disableFormElements(form); }, 13);
+          // further timeout so Safari repaints the changes
+          setTimeout(function(){ form.submit(); }, 15);
+        }
       }
     });
 
@@ -489,7 +492,7 @@
 
       // register the pressed submit button
       var name = button.attr('name'),
-        data = name ? {name:name, value:button.val()} : null;
+      data = name ? {name:name, value:button.val()} : null;
 
       button.closest('form').data('ujs:submit-button', data);
     });
